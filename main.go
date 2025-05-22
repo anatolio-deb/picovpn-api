@@ -91,7 +91,7 @@ func main() {
 	r := gin.New()
 
 	r.Use(authMiddleware(token))
-	r.GET("/auth", showInitDataMiddleware)
+	r.POST("/auth", showInitDataMiddleware)
 
 	if err := r.Run(":3000"); err != nil {
 		panic(err)
