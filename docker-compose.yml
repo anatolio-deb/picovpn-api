@@ -37,12 +37,13 @@ services:
       # - /etc/letsencrypt/live/picovpn.ru/fullchain.pem:/etc/letsencrypt/live/picovpn.ru/fullchain.pem
     depends_on:
       - traefik
-    command: go build -o /usr/local/bin/api && api
+    command: api
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.entrypoints=web"
       - "traefik.http.routers.api.rule=Host(api.picovpn.ru)"
       - "traefik.http.routers.whoami.tls.certresolver=lets-encr"
+    entrypoint: ./entrypoint.sh
     
 
 networks:
