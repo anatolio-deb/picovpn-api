@@ -9,8 +9,8 @@ services:
     volumes:
       - .:/code
       # - /etc/letsencrypt/live/picovpn.ru/fullchain.pem:/etc/letsencrypt/live/picovpn.ru/fullchain.pem
-    depends_on:
-      - traefik
+    # depends_on:
+    #   - traefik
     command: go build -o /usr/local/bin/api /code/main.go && api
     labels:
       - "traefik.enable=true"
