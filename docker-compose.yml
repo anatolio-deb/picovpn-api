@@ -19,8 +19,8 @@ services:
       - "traefik.enable=true"
       ## DNS CHALLENGE
       - "traefik.http.routers.traefik.tls.certresolver=lets-encr"
-      - "traefik.http.routers.traefik.tls.domains[0].main=*.$MY_DOMAIN"
-      - "traefik.http.routers.traefik.tls.domains[0].sans=$MY_DOMAIN"
+      - "traefik.http.routers.traefik.tls.domains[0].main=*.picovpn.ru"
+      - "traefik.http.routers.traefik.tls.domains[0].sans=picovpn.ru"
       ## HTTP REDIRECT
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
       - "traefik.http.routers.redirect-https.rule=hostregexp(`{host:.+}`)"
@@ -43,11 +43,11 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.entrypoints=web"
-      - "traefik.http.routers.api.rule=Host(api.$MY_DOMAIN)"
+      - "traefik.http.routers.api.rule=Host(api.picovpn.ru)"
       - "traefik.http.routers.whoami.tls.certresolver=lets-encr"
     
 
 networks:
   default:
     external:
-      name: $DEFAULT_NETWORK
+      name: web
