@@ -1,12 +1,10 @@
-version: "3.7"
-
 services:
   traefik:
     image: "traefik:v2.1"
     container_name: "traefik"
     hostname: "traefik"
-    env_file:
-      - .env
+    # env_file:
+    #   - .env
     ports:
       - "80:80"
       - "443:443"
@@ -49,5 +47,5 @@ services:
 
 networks:
   default:
-    external:
-      name: web
+    external: true
+    name: web
