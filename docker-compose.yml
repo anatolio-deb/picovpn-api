@@ -12,7 +12,7 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "./traefik.yml:/opt/traefik.yml:ro"
-      - "./acme.json:/acme.json"
+      - "./acme.json:/opt/acme.json"
     labels:
       - "traefik.enable=true"
       ## DNS CHALLENGE
@@ -24,7 +24,6 @@ services:
       - "traefik.http.routers.redirect-https.rule=hostregexp(`{host:.+}`)"
       - "traefik.http.routers.redirect-https.entrypoints=web"
       - "traefik.http.routers.redirect-https.middlewares=redirect-to-https"
-
   api:
     image: golang:alpine
     container_name: "api"
@@ -37,14 +36,12 @@ services:
       # - /etc/letsencrypt/live/picovpn.ru/fullchain.pem:/etc/letsencrypt/live/picovpn.ru/fullchain.pem
     depends_on:
       - traefik
-    command: go build -o /usr/local/bin/api /code/main.go && api
+    command: go run /code/main.go
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.entrypoints=web"
       - "traefik.http.routers.api.rule=Host(api.picovpn.ru)"
       - "traefik.http.routers.whoami.tls.certresolver=lets-encr"
-    
-
 networks:
   default:
     external: true
