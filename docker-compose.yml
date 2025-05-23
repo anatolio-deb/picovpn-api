@@ -25,7 +25,7 @@ services:
       - "traefik.http.routers.redirect-https.entrypoints=web"
       - "traefik.http.routers.redirect-https.middlewares=redirect-to-https"
   api:
-    image: golang:alpine
+    image: "golang:alpine"
     container_name: "api"
     hostname: "api"
     working_dir: /code
