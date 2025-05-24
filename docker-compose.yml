@@ -39,6 +39,8 @@ services:
     command: go run /code/main.go
     networks:
       - backend
+    expose:
+      - 3000
     # labels:
     #   - "traefik.enable=true"
     #   - "traefik.http.routers.api.entrypoints=web"
