@@ -1,29 +1,29 @@
 services:
-  traefik:
-    image: "traefik:v2.1"
-    container_name: "traefik"
-    hostname: "traefik"
-    # env_file:
-    #   - .env
-    ports:
-      - "80:80"
-      - "443:443"
-      # - "8080:8080"
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "./traefik.yml:/opt/traefik.yml:ro"
-      - "./acme.json:/opt/acme.json"
-    labels:
-      - "traefik.enable=true"
-      ## DNS CHALLENGE
-      - "traefik.http.routers.traefik.tls.certresolver=lets-encr"
-      - "traefik.http.routers.traefik.tls.domains[0].main=*.picovpn.ru"
-      - "traefik.http.routers.traefik.tls.domains[0].sans=picovpn.ru"
-      ## HTTP REDIRECT
-      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
-      - "traefik.http.routers.redirect-https.rule=hostregexp(`{host:.+}`)"
-      - "traefik.http.routers.redirect-https.entrypoints=web"
-      - "traefik.http.routers.redirect-https.middlewares=redirect-to-https"
+  # traefik:
+  #   image: "traefik:v2.1"
+  #   container_name: "traefik"
+  #   hostname: "traefik"
+  #   # env_file:
+  #   #   - .env
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #     # - "8080:8080"
+  #   volumes:
+  #     - "/var/run/docker.sock:/var/run/docker.sock:ro"
+  #     - "./traefik.yml:/opt/traefik.yml:ro"
+  #     - "./acme.json:/opt/acme.json"
+  #   labels:
+  #     - "traefik.enable=true"
+  #     ## DNS CHALLENGE
+  #     - "traefik.http.routers.traefik.tls.certresolver=lets-encr"
+  #     - "traefik.http.routers.traefik.tls.domains[0].main=*.picovpn.ru"
+  #     - "traefik.http.routers.traefik.tls.domains[0].sans=picovpn.ru"
+  #     ## HTTP REDIRECT
+  #     - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+  #     - "traefik.http.routers.redirect-https.rule=hostregexp(`{host:.+}`)"
+  #     - "traefik.http.routers.redirect-https.entrypoints=web"
+  #     - "traefik.http.routers.redirect-https.middlewares=redirect-to-https"
   api:
     image: "golang:alpine"
     container_name: "api"
@@ -34,15 +34,17 @@ services:
     volumes:
       - .:/code
       # - /etc/letsencrypt/live/picovpn.ru/fullchain.pem:/etc/letsencrypt/live/picovpn.ru/fullchain.pem
-    depends_on:
-      - traefik
+    # depends_on:
+    #   - traefik
     command: go run /code/main.go
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.api.entrypoints=web"
-      - "traefik.http.routers.api.rule=Host(api.picovpn.ru)"
-      - "traefik.http.routers.whoami.tls.certresolver=lets-encr"
+    networks:
+      - backend
+    # labels:
+    #   - "traefik.enable=true"
+    #   - "traefik.http.routers.api.entrypoints=web"
+    #   - "traefik.http.routers.api.rule=Host(api.picovpn.ru)"
+    #   - "traefik.http.routers.whoami.tls.certresolver=lets-encr"
 networks:
-  default:
-    external: true
-    name: web
+  backend:
+    external: false
+    # name: backend
