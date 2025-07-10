@@ -357,6 +357,8 @@ func planUpdate(context *gin.Context) {
 		return
 	}
 
+	log.Println("Transaction BOC:", request.BOC)
+
 	// TODO: find transaction by boc
 
 	initData, ok := ctxInitData(context.Request.Context())
