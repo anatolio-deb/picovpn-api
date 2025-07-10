@@ -46,3 +46,7 @@ type Daemon struct {
 type DaemonPublic struct {
 	Address string `json:"address"`
 }
+
+type PlanUpdate struct {
+	Months int `json:"months"`
+}

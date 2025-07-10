@@ -61,6 +61,7 @@ func main() {
 	r.POST("/api/password-reset", passwordReset)
 	r.GET("/api/plans/", plansGet)
 	r.GET("/api/daemons", daemonsGet)
+	r.POST("/api/plans", planUpdate)
 
 	go LockExpiredUsers()
 

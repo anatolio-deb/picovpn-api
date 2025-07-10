@@ -339,3 +339,45 @@ func daemonsGet(context *gin.Context) {
 	}
 	context.IndentedJSON(http.StatusOK, public)
 }
+
+func planUpdate(context *gin.Context) {
+	b, err := io.ReadAll(context.Request.Body)
+	if err != nil {
+		context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
+			"message": err,
+		})
+		return
+	}
+	planUpdate := PlanUpdate{}
+	err = json.Unmarshal(b, &planUpdate)
+	if err != nil {
+		context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
+			"message": err,
+		})
+		return
+	}
+
+	initData, ok := ctxInitData(context.Request.Context())
+	if !ok {
+		context.AbortWithStatusJSON(http.StatusUnauthorized, map[string]any{
+			"message": "Init data not found",
+		})
+		return
+	}
+	plan, err := PlansGetByTelegramUserID(initData.User.ID)
+	if err != nil {
+		context.AbortWithStatusJSON(http.StatusNotFound, map[string]any{
+			"message": err,
+		})
+		return
+	}
+	plan.ExpiresAt = time.Now().AddDate(0, planUpdate.Months, 0)
+	result := DB.Save(plan)
+	if result.Error != nil {
+		context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
+			"message": result.Error,
+		})
+		return
+	}
+	context.IndentedJSON(http.StatusOK, plan)
+}
