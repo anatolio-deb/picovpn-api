@@ -7,10 +7,12 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	pb "github.com/anatolio-deb/picovpnd/grpc"
 	"github.com/gin-gonic/gin"
+	"github.com/tonkeeper/tonapi-go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -359,7 +361,51 @@ func planUpdate(context *gin.Context) {
 
 	log.Println("Transaction BOC:", request.BOC)
 
-	// TODO: find transaction by boc
+	// find transaction by boc
+
+	client, err := tonapi.NewClient(tonapi.TonApiURL, tonapi.WithToken(os.Getenv("TON_API_KEY")))
+	if err != nil {
+		context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
+			"message": err,
+		})
+		return
+	}
+
+	response, err := client.GetBlockchainAccountTransactions(context, tonapi.GetBlockchainAccountTransactionsParams{
+		AccountID: os.Getenv("TON_ACCOUNT_ID"),
+		Limit:     tonapi.NewOptInt32(100),
+	})
+
+	if err != nil {
+		context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
+			"message": err,
+		})
+		return
+	}
+
+	var transaction *tonapi.Transaction
+	transactions := response.GetTransactions()
+	for i, t := range transactions {
+		message := t.GetInMsg()
+		if message.IsSet() && message.Value.GetRawBody().Value == request.Comment {
+			transaction = &transactions[i]
+			break
+
+			// TODO: get transaction status
+			// 		for{
+			// 			client.GetBlockchainTransaction(context, tonapi.GetBlockchainTransactionParams{
+			// 	TransactionID: t. ,
+			// })
+			// 		}
+		}
+	}
+
+	if transaction == nil {
+		context.AbortWithStatusJSON(http.StatusNotFound, map[string]any{
+			"message": "transaction not found",
+		})
+		return
+	}
 
 	initData, ok := ctxInitData(context.Request.Context())
 	if !ok {
