@@ -348,14 +348,16 @@ func planUpdate(context *gin.Context) {
 		})
 		return
 	}
-	planUpdate := PlanUpdate{}
-	err = json.Unmarshal(b, &planUpdate)
+	request := PlanUpdate{}
+	err = json.Unmarshal(b, &request)
 	if err != nil {
 		context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
 			"message": err,
 		})
 		return
 	}
+
+	// TODO: find transaction by boc
 
 	initData, ok := ctxInitData(context.Request.Context())
 	if !ok {
@@ -371,7 +373,43 @@ func planUpdate(context *gin.Context) {
 		})
 		return
 	}
-	plan.ExpiresAt = time.Now().AddDate(0, planUpdate.Months, 0)
+
+	// unlock user if locked
+	if time.Until(plan.ExpiresAt) <= 0 {
+		daemons, err := DaemonsGetAll()
+		if err != nil {
+			log.Println(err)
+		}
+
+		for _, daemon := range daemons {
+			certPool := x509.NewCertPool()
+			if !certPool.AppendCertsFromPEM(daemon.CertPEM) {
+				log.Println(err)
+				continue
+			}
+			creds := credentials.NewClientTLSFromCert(certPool, daemon.Address)
+			conn, err := grpc.NewClient(fmt.Sprintf(daemon.Address+":%d", daemon.Port), grpc.WithTransportCredentials(creds))
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			defer conn.Close()
+			c := pb.NewOpenConnectServiceClient(conn)
+			resp, err := c.UserUnlock(context, &pb.UserUnlockRequest{
+				Username: plan.User.TelegramUsername,
+			})
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			if resp.Error != "" {
+				log.Println(err)
+				continue
+			}
+		}
+	}
+
+	plan.ExpiresAt = time.Now().AddDate(0, request.Months, 0)
 	result := DB.Save(plan)
 	if result.Error != nil {
 		context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{

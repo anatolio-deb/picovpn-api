@@ -41,7 +41,7 @@ func UserGetByTelegramID(id int64) (*User, error) {
 
 func PlansGetExpired() ([]Plan, error) {
 	plans := make([]Plan, 0)
-	result := DB.Where("expires_at >= ?", time.Now()).Find(&plans)
+	result := DB.Where("expires_at <= ?", time.Now()).Find(&plans)
 	return plans, result.Error
 }
 

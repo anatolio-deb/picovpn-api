@@ -48,5 +48,6 @@ type DaemonPublic struct {
 }
 
 type PlanUpdate struct {
-	Months int `json:"months"`
+	Months int    `json:"months"`
+	BOC    string `json:"boc"`
 }
