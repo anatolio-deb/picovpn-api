@@ -58,7 +58,6 @@ func main() {
 	r.GET("/api/users/", userGet)
 	r.POST("/api/users", userAdd)
 	r.POST("/api/daemons", registerDaemon)
-	r.POST("/api/password-reset", passwordReset)
 	r.GET("/api/plans/", plansGet)
 	r.GET("/api/daemons", daemonsGet)
 	r.POST("/api/plans", planUpdate)

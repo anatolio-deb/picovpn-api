@@ -112,69 +112,69 @@ func userAdd(context *gin.Context) {
 			})
 			return
 		}
+	}
 
-		daemons, err := DaemonsGetAll()
+	daemons, err := DaemonsGetAll()
+	if err != nil {
+		context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
+			"message": err,
+		})
+		return
+	}
+	if len(daemons) == 0 {
+		context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
+			"message": "No daemons found",
+		})
+		return
+	}
+	// Propogate new user to ocserve server instances through the daemons
+	for _, daemon := range daemons {
+		certPool := x509.NewCertPool()
+		if !certPool.AppendCertsFromPEM(daemon.CertPEM) {
+			log.Printf("could not append certificate for daemon %s: %v", daemon.Address, err)
+			context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
+				"message": "Failed to append certificate",
+			})
+			return
+		}
+		creds := credentials.NewClientTLSFromCert(certPool, daemon.Address)
+		conn, err := grpc.NewClient(fmt.Sprintf(daemon.Address+":%d", daemon.Port), grpc.WithTransportCredentials(creds))
 		if err != nil {
+			log.Printf("did not connect to daemon %s: %v", daemon.Address, err)
 			context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
 				"message": err,
 			})
 			return
 		}
-		if len(daemons) == 0 {
+		defer conn.Close()
+		c := pb.NewOpenConnectServiceClient(conn)
+		r, err := c.UserAdd(context.Request.Context(), &pb.UserAddRequest{
+			Username: initData.User.Username,
+			Password: password.Password,
+		})
+		if err != nil {
+			log.Printf("could not add user: %v", err)
 			context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
-				"message": "No daemons found",
+				"message": err,
 			})
 			return
 		}
-		// Propogate new user to ocserve server instances through the daemons
-		for _, daemon := range daemons {
-			certPool := x509.NewCertPool()
-			if !certPool.AppendCertsFromPEM(daemon.CertPEM) {
-				log.Printf("could not append certificate for daemon %s: %v", daemon.Address, err)
-				context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
-					"message": "Failed to append certificate",
-				})
-				return
-			}
-			creds := credentials.NewClientTLSFromCert(certPool, daemon.Address)
-			conn, err := grpc.NewClient(fmt.Sprintf(daemon.Address+":%d", daemon.Port), grpc.WithTransportCredentials(creds))
-			if err != nil {
-				log.Printf("did not connect to daemon %s: %v", daemon.Address, err)
-				context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
-					"message": err,
-				})
-				return
-			}
-			defer conn.Close()
-			c := pb.NewOpenConnectServiceClient(conn)
-			r, err := c.UserAdd(context.Request.Context(), &pb.UserAddRequest{
-				Username: initData.User.Username,
-				Password: password.Password,
+		if r.Error != "" {
+			log.Printf("error adding user: %s", r.Error)
+			context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
+				"message": r.Error,
 			})
-			if err != nil {
-				log.Printf("could not add user: %v", err)
-				context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
-					"message": err,
-				})
-				return
-			}
-			if r.Error != "" {
-				log.Printf("error adding user: %s", r.Error)
-				context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
-					"message": r.Error,
-				})
-				return
-			}
-			log.Printf("User %s added successfully on daemon %s", initData.User.Username, daemon.Address)
-			context.IndentedJSON(http.StatusOK, map[string]any{
-				"message":  "User added successfully",
-				"initData": initData,
-			})
+			return
 		}
-		return
+		log.Printf("User %s added successfully on daemon %s", initData.User.Username, daemon.Address)
+		context.IndentedJSON(http.StatusOK, map[string]any{
+			"message":  "User added successfully",
+			"initData": initData,
+		})
 	}
+
 	context.IndentedJSON(http.StatusOK, map[string]any{
-		"message":  "User already exists",
+		"message":  "New user created",
 		"initData": initData})
 }
 
@@ -216,94 +216,6 @@ func registerDaemon(context *gin.Context) {
 	}
 	context.IndentedJSON(http.StatusOK, daemon)
 
-}
-
-func passwordReset(context *gin.Context) {
-	b, err := io.ReadAll(context.Request.Body)
-	if err != nil {
-		context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
-			"message": err,
-		})
-		return
-	}
-	password := Password{}
-	err = json.Unmarshal(b, &password)
-	if err != nil {
-		context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
-			"message": err,
-		})
-		return
-	}
-	if !password.IsValid() {
-		context.AbortWithStatusJSON(http.StatusBadRequest, map[string]any{
-			"message": "Password is not valid",
-		})
-		return
-	}
-	initData, ok := ctxInitData(context.Request.Context())
-	if !ok {
-		context.AbortWithStatusJSON(http.StatusUnauthorized, map[string]any{
-			"message": "Init data not found",
-		})
-		return
-	}
-	daemons, err := DaemonsGetAll()
-	if err != nil {
-		context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
-			"message": err,
-		})
-		return
-	}
-	if len(daemons) == 0 {
-		context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
-			"message": "No daemons found",
-		})
-		return
-	}
-	for _, daemon := range daemons {
-		certPool := x509.NewCertPool()
-		if !certPool.AppendCertsFromPEM(daemon.CertPEM) {
-			log.Printf("could not append certificate for daemon %s: %v", daemon.Address, err)
-			context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
-				"message": "Failed to append certificate",
-			})
-			return
-		}
-		creds := credentials.NewClientTLSFromCert(certPool, daemon.Address)
-		conn, err := grpc.NewClient(fmt.Sprintf(daemon.Address+":%d", daemon.Port), grpc.WithTransportCredentials(creds))
-		if err != nil {
-			log.Printf("did not connect to daemon %s: %v", daemon.Address, err)
-			context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
-				"message": err,
-			})
-			return
-		}
-		defer conn.Close()
-		c := pb.NewOpenConnectServiceClient(conn)
-		r, err := c.UserChangePassword(context.Request.Context(), &pb.UserChangePasswordRequest{
-			Username: initData.User.Username,
-			Password: password.Password,
-		})
-		if err != nil {
-			log.Printf("could not change password: %v", err)
-			context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
-				"message": err,
-			})
-			return
-		}
-		if r.Error != "" {
-			log.Printf("error changing password: %s", r.Error)
-			context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
-				"message": r.Error,
-			})
-			return
-		}
-		log.Printf("Password for user %s changed successfully on daemon %s", initData.User.Username, daemon.Address)
-		context.IndentedJSON(http.StatusOK, map[string]any{
-			"message":  "Password changed successfully",
-			"initData": initData,
-		})
-	}
 }
 
 func plansGet(context *gin.Context) {
