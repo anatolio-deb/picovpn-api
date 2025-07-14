@@ -4,6 +4,8 @@ github.com/anatolio-deb/picovpnd v1.2.8 h1:hn1IWJBB0YHrOtE7w4fV49xK9TN9F2MBNNqv8
 github.com/anatolio-deb/picovpnd v1.2.8/go.mod h1:EfHdNWr/z9LYCuf0A+izLA2Wkkdqk8WaXwp3L1WmVwU=
 github.com/anatolio-deb/picovpnd v1.4.5 h1:j8N4NrHYrANur6mcFUxJr/RwC5m5I53OkfZ2wg0zoKI=
 github.com/anatolio-deb/picovpnd v1.4.5/go.mod h1:EfHdNWr/z9LYCuf0A+izLA2Wkkdqk8WaXwp3L1WmVwU=
+github.com/anatolio-deb/picovpnd v1.4.6 h1:yQoCY8s4TFaLtOiBgUNg31z8TA1Aiku+wf7/PbcOdE8=
+github.com/anatolio-deb/picovpnd v1.4.6/go.mod h1:EfHdNWr/z9LYCuf0A+izLA2Wkkdqk8WaXwp3L1WmVwU=
 github.com/bytedance/sonic v1.13.2 h1:8/H1FempDZqC4VqjptGo14QQlJx8VdZJegxs6wwfqpQ=
 github.com/bytedance/sonic v1.13.2/go.mod h1:o68xyaF9u2gvVBuGHPlUVCy+ZfmNNO5ETf1+KgkJhz4=
 github.com/bytedance/sonic/loader v0.1.1/go.mod h1:ncP89zfokxS5LZrJxl5z0UJcsk4M4yY2JpfqGeCtNLU=

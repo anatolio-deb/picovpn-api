@@ -3,7 +3,7 @@ module github.com/anatolio-deb/picovpn-api
 go 1.23.8
 
 require (
-	github.com/anatolio-deb/picovpnd v1.4.5
+	github.com/anatolio-deb/picovpnd v1.4.6
 	github.com/gin-contrib/cors v1.7.5
 	github.com/gin-gonic/gin v1.10.1
 	github.com/sirupsen/logrus v1.9.3
