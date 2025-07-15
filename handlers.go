@@ -203,7 +203,7 @@ func registerDaemon(context *gin.Context) {
 			})
 			return
 		}
-	} else if daemonRec.Address == daemon.Address {
+	} else {
 		daemonRec.Port = daemon.Port
 		daemonRec.CertPEM = daemon.CertPEM
 		result := DB.Save(&daemonRec)
@@ -215,7 +215,6 @@ func registerDaemon(context *gin.Context) {
 		}
 	}
 	context.IndentedJSON(http.StatusOK, daemon)
-
 }
 
 func plansGet(context *gin.Context) {
