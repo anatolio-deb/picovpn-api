@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
@@ -57,10 +58,10 @@ func userGet(context *gin.Context) {
 	context.IndentedJSON(http.StatusOK, user)
 }
 
-func userAdd(context *gin.Context) {
-	b, err := io.ReadAll(context.Request.Body)
+func userAdd(ctx *gin.Context) {
+	b, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
-		context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
 			"message": err,
 		})
 		return
@@ -68,20 +69,20 @@ func userAdd(context *gin.Context) {
 	password := Password{}
 	err = json.Unmarshal(b, &password)
 	if err != nil {
-		context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
 			"message": err,
 		})
 		return
 	}
 	if !password.IsValid() {
-		context.AbortWithStatusJSON(http.StatusBadRequest, map[string]any{
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, map[string]any{
 			"message": "Password is not valid",
 		})
 		return
 	}
-	initData, ok := ctxInitData(context.Request.Context())
+	initData, ok := ctxInitData(ctx.Request.Context())
 	if !ok {
-		context.AbortWithStatusJSON(http.StatusUnauthorized, map[string]any{
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, map[string]any{
 			"message": "Init data not found",
 		})
 		return
@@ -98,7 +99,7 @@ func userAdd(context *gin.Context) {
 
 		result := DB.Create(&user)
 		if result.Error != nil {
-			context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
 				"message": result.Error,
 			})
 			return
@@ -107,7 +108,7 @@ func userAdd(context *gin.Context) {
 		plan := Plan{ExpiresAt: time.Now().AddDate(0, 1, 0), UserID: user.ID, User: *user}
 		result = DB.Create(&plan)
 		if result.Error != nil {
-			context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
 				"message": result.Error,
 			})
 			return
@@ -116,13 +117,13 @@ func userAdd(context *gin.Context) {
 
 	daemons, err := DaemonsGetAll()
 	if err != nil {
-		context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
 			"message": err,
 		})
 		return
 	}
 	if len(daemons) == 0 {
-		context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
 			"message": "No daemons found",
 		})
 		return
@@ -132,7 +133,7 @@ func userAdd(context *gin.Context) {
 		certPool := x509.NewCertPool()
 		if !certPool.AppendCertsFromPEM(daemon.CertPEM) {
 			log.Printf("could not append certificate for daemon %s: %v", daemon.Address, err)
-			context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
 				"message": "Failed to append certificate",
 			})
 			return
@@ -141,39 +142,39 @@ func userAdd(context *gin.Context) {
 		conn, err := grpc.NewClient(fmt.Sprintf(daemon.Address+":%d", daemon.Port), grpc.WithTransportCredentials(creds))
 		if err != nil {
 			log.Printf("did not connect to daemon %s: %v", daemon.Address, err)
-			context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
 				"message": err,
 			})
 			return
 		}
 		defer conn.Close()
 		c := pb.NewOpenConnectServiceClient(conn)
-		r, err := c.UserAdd(context.Request.Context(), &pb.UserAddRequest{
+		r, err := c.UserAdd(context.TODO(), &pb.UserAddRequest{
 			Username: initData.User.Username,
 			Password: password.Password,
 		})
 		if err != nil {
 			log.Printf("could not add user: %v", err)
-			context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
 				"message": err,
 			})
 			return
 		}
 		if r.Error != "" {
 			log.Printf("error adding user: %s", r.Error)
-			context.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
 				"message": r.Error,
 			})
 			return
 		}
 		log.Printf("User %s added successfully on daemon %s", initData.User.Username, daemon.Address)
-		context.IndentedJSON(http.StatusOK, map[string]any{
+		ctx.IndentedJSON(http.StatusOK, map[string]any{
 			"message":  "User added successfully",
 			"initData": initData,
 		})
 	}
 
-	context.IndentedJSON(http.StatusOK, map[string]any{
+	ctx.IndentedJSON(http.StatusOK, map[string]any{
 		"message":  "New user created",
 		"initData": initData})
 }
