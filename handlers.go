@@ -148,7 +148,7 @@ func userAdd(context *gin.Context) {
 		}
 		defer conn.Close()
 		c := pb.NewOpenConnectServiceClient(conn)
-		r, err := c.UserAdd(nil, &pb.UserAddRequest{
+		r, err := c.UserAdd(context.Request.Context(), &pb.UserAddRequest{
 			Username: initData.User.Username,
 			Password: password.Password,
 		})
